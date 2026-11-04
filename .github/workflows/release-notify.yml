@@ -1,0 +1,26 @@
+name: Notify running apps
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Current stable release tag
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: stable-release-notification
+  cancel-in-progress: false
+jobs:
+  notify:
+    if: github.event_name == 'workflow_dispatch' || (!github.event.release.draft && !github.event.release.prerelease)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/publish-release-signal.py
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FIREBASE_RELEASE_API_KEY: ${{ secrets.FIREBASE_RELEASE_API_KEY }}
+          FIREBASE_RELEASE_REFRESH_TOKEN: ${{ secrets.FIREBASE_RELEASE_REFRESH_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
